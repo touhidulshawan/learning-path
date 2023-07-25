@@ -1,0 +1,29 @@
+#+title: SQL UNION Attack
+#+description: More about SQL UNION attack
+
+* UNION Keyword
+Used to retrieve data from other tables within the database in SQL
+
+The UNION keyword execute one or more additional ~SELECT~ queries and append the results to the original query
+
+* Determining the number of columns required in SQL injection UNION attack
+
+2 effective methods to determine how many columns are being returned from the original query
+
+1. injecting series of ~ORDER BY~ clause and incrementing the specified column index until an error occurs
+
+   #+begin_src sql
+     ' ORDER BY 1--
+     ' ORDER BY 2--
+     ' ORDER BY 3--
+     ' ORDER BY 4--
+   etc.
+   #+end_src
+
+ May give error like *position number 3 is out of range of the number of items in the select list*
+
+   1. Submitting a series of ~UNION SELECT~  payloads specifying a different number of null values:
+
+      #+begin_src sql
+      
+      #+end_src
