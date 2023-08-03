@@ -1,0 +1,44 @@
+#+title: Authentication
+#+description: Notes from learning about Authentication <- Portswigger Learning Path
+#+author:[[https://github.com/touhidulshawan][Touhidul Shawan]]
+
+* What is authentication?
+A process to verify the identity of a given user or client. In other words, it involves making sure that they really are who they claim to be
+** 3 authentication factors into which different types of authentication can be categorized
++ *Knowledge factors* -> password, answer to a security question.
++ *Possession factors* -> physical object like mobile phone or security token
++ *Inherence factors* -> biometrics or pattern behavior
+
+* Authentication vs Authorization
+Authentication is the process of verifying that a user really is who they claim to be, whereas authoriztion involes verifying wheter a user is allowed to do something.
+* Arise of Authentication vulnerability
+Most vulnerability in authentication mechanisms arise in one of two ways
++ Mechanisms are weak because they fail to adequately protect against brute-force attacks.
++ Logic flaws or poor coding in the implementation allow the authentication mechanisms to be bypassed entirely by an attacker also known as *Broken Authentication*
+* Vulnerabilities in password-based authentication
+** Brute-force attack
+- username
+- password
+*** Username Enumeration
+Pay attention to some factors while doing username enumeration
++ status code
++ error message
++ response time
+  + Observe the longer taking payload
+* HTTP basic authentication
+* Multi factor authentication
+** Two-factor authentication tokens
+** Bypassing two-factor authentication
+** Bypassing two-factor authentication with flawed verification
+** Brute-forcing two factor authentication codes
+* Other authentication mechanisms
+* OAuth authentication
+* Lab Solutions
+- [[https://github.com/touhidulshawan/portswigger-labs/tree/main/authentication][Authentcation Lab Solutions]]
+
+
+
+
+#+begin_quote
+Not complete yet. I will be back on as soon as possible
+#+end_quote

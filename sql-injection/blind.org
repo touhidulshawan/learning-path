@@ -1,0 +1,46 @@
+#+title: Blind SQL Injection
+#+description: Notes about Blind SQL injection attack from learning path of Portswigger
+#+author: [[https://github.com/touhidulshawan][Touhidul Shawan]]
+
+* Table of Contens :toc:
+- [[#what-is-blind-sql-injection][What is Blind SQL Injection]]
+- [[#exploiting-blind-sql-injection-by-triggering-conditional-response][Exploiting Blind SQL injection by triggering conditional response]]
+- [[#error-based-sql-injection][Error-based SQL Injection]]
+- [[#extracting-sensitive-data-via-verbose-sql-error-messages][Extracting sensitive data via verbose SQL error messages]]
+- [[#exploiting-blind-sql-injection-by-triggering-time-delays][Exploiting blind SQL injection by triggering time delays]]
+- [[#exploiting-blind-sql-injection-using-out-of-band-oast-techniques][Exploiting blind SQL injection using out of band (OAST) techniques]]
+- [[#oast][OAST]]
+
+* What is Blind SQL Injection
+Blind SQL injection arises when an application is vulnerable to SQL injeciton, but it's HTTP responses do not contain the results of the relevant SQL query or the details of any database errors
+
+Many techniques such as ~UNION~ attacks are not effective because they rely on beign able to see the results of the injected query within the application's response
+
+* Exploiting Blind SQL injection by triggering conditional response
+An application uses tracking cookies to track about usages like
+~Cookie: TrackingID=somerandomstring~
+It use a SQL query like this
+#+begin_src sql
+  SELECT TrackingID FROM TrackedUsers WHERE TrackingID = 'somerandomstring'
+#+end_src
+This query is vulnerable to SQL injection, but the result from the query are not returned to the users. This is blind SQL injection. However, the application does behave differently depending on whether the query returns any data. If it returns data(because a recognized TrackingID was submitted), then a 'Welcome Back' message is displayed within the page. This behaior is enough to exploit the blind SQL injection vulnerability.
+
+#+begin_src sql
+  ' AND '1'='1 
+  ' AND '1'='2
+#+end_src
+The first of these values will cause the query to return results, because the injected ~AND '1'='1~ condition is true and so the 'Welcome Back' message will be displayed. But second value will cause the query to not return any results, because the injected condition is false, and the message will not be displayed. /This allows us to determine the answer to any single injected condition, and so extract data one bit at a time./
+
+#+begin_src sql
+  xyz' AND SUBSTRING((SELECT Password FROM Users WHERE Username = 'Administrator'), 1, 1) > 'm
+#+end_src
+
+*** Lab
+- [[https://portswigger.net/web-security/sql-injection/blind/lab-conditional-responses][Blind SQL injection with conditional responses]]
+
+
+* Error-based SQL Injection
+* Extracting sensitive data via verbose SQL error messages
+* Exploiting blind SQL injection by triggering time delays
+* Exploiting blind SQL injection using out of band (OAST) techniques
+* OAST

