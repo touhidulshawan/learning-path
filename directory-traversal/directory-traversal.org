@@ -1,0 +1,43 @@
+#+title: Directory Traversal
+#+description: Notes from Directory Traversal of learning path from Portswigger
+#+author: [[https://github.com/touhidulshawan][Touhidul Shawan]]
+
+* Table of Contents :toc:
+- [[#directory-traversal][Directory Traversal?]]
+- [[#reading-arbitrary-files][Reading arbitrary files]]
+- [[#common-obstacles][Common obstacles]]
+- [[#all-labs][All Labs]]
+
+* Directory Traversal?
+Directory traversal aka path traversal a vulnerability that allow an attacker 
+- read arbitrary files on the server
+- may include code and data, credentials for back-end system, sensitive operating systems files
+- allow to modify application data or behavior
+- may allow to take full control of the server 
+* Reading arbitrary files
+Consider a shopping application that displays images of items for sale. Images are loaded via some HTML like 
+#+begin_src html
+  <img src="/loadImage?filename=image-filename.png">
+#+end_src
+
+- loadImage url take a filename and returns the contents of the specified file
+- images file stored on disk in server location like ~/var/www/images/~
+- application reads from following file path
+- ~/var/www/images/image-filename.png~
+
+If  application implements no defense against directory traversal attacks then an attacker can request like following url and retreive an arbitrary file from the server's filesystem
+~https://example.com/loadImage?filename=../../~../etc/passwd
+
+So if this execute successfully then an attacker will be able to retrieve the content of the /etc/passwd file.
+* Common obstacles
+- strips or blocks directory traversal sequences
+  - use an absolute path from the filesystem like ~filename=/etc/passwd~
+  - use nested traversal sequences like ~....//~ or ~....\/~
+- ~multipart/form-data~ request, web-server may strip any directory traversal sequences
+  - use url encoding technique to bypass like ~../~ characters resulting in ~%2e%2e%2f~ or ~%252e%252e%252e~
+  - non-standard encoding like ~..%c0%af~ or ~..%ef%bc%8f~ may also do the trick
+- If it requires filename must end with an expected file extention, like ~.png~ then
+  - use null byte to effectively terminate the file path before the required extention
+    - ~filename=../../../etc/passwd%00.png~
+* All Labs
++ [[https://github.com/touhidulshawan/portswigger-labs/tree/main/directory-traversal][Directory Traversal Labs]]
