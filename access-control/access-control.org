@@ -1,0 +1,49 @@
+#+TITLE: Access Control Vulnerability
+#+AUTHOR: [[https://github.com/touhidulshawan][Touhidul Shawan]]
+#+DESCRIPTION: Notes of Access Control Vulnerability from Portswigger learning path
+#+DATE: 2023-08-11 Fri
+#+OPTIONS: toc:2
+
+* Table of contents :toc:
+- [[#what-is-access-contro][What is access contro]]
+- [[#vertical-access-control][Vertical access control]]
+- [[#horizontal-access-control][Horizontal access control]]
+- [[#context-dependent-access-control][Context-dependent access control]]
+- [[#broken-access-control-aka-bac][Broken Access Control aka BAC]]
+- [[#vertical-privilege-escalation][Vertical privilege escalation]]
+- [[#horizontal-privilege-escalation][Horizontal privilege escalation]]
+- [[#insecure-direct-object-references-aka-idor][Insecure Direct Object References aka IDOR]]
+
+* What is access contro
+Access control or authorization is the applicaton of constraints on who or what can perform attempted actions or access resources that they have requested.
+Is dependent on:
++ *Authentication*: identifies the user and confirms that they are who they say they are
++ *Session management*: identifies which subsequent HTTP request are being made by that same user
++ *Access Control*: determines whether the user is allowed to carry out the action that they are attempting to perform
+
+Can be divided into 3 categories:
+- Vertical access control
+- Horizontal access control
+- Context-dependent access control
+
+* Vertical access control 
+- restrict access to sensitive functionality that is not available to other type of users
+- ex: admin user can modify user's account but ordinary user has no access to this type of action
+- vr: "||"
+* Horizontal access control
+- restrict access to resources to the users  who are specifically allowed to access those resources.
+- ex: banking application will allow a user to view transactions and make payments from their own account not the account of any other users.
+- vr: "=="
+* Context-dependent access control
+- restrict access to functionality and resources based upon the state of the application or the user's interaction with it
+- ex: retail website might prevent users from modifying the contents of their shopping cart after they have made payment.
+* Broken Access Control aka BAC
+Vulnerabilities exist when a user can in fact access some resource or perform some action that they are not supposed to be able to access
+* Vertical privilege escalation
+- non-administrative user gain access to admin page and perform admin's actions
+* Horizontal privilege escalation
+- gain access to resources belonging to another user
+* Insecure Direct Object References aka IDOR
+- subcategory of access control vulnerabilities
+- application uses user-supplied input to access objects directly
+- attacker can modify the input to obtain unauthorized access
