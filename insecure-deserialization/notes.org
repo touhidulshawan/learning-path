@@ -1,0 +1,51 @@
+#+TITLE: Insecure Deserialization
+#+AUTHOR: [[https://github.com/touhidulshawan][Touhidul Shawan]]
+#+DESCRIPTION: Notes of learning Insecure Deserialization
+#+DATE: 2023-10-24 Tue
+#+OPTIONS: toc:2
+
+* Table of Contents :toc:
+- [[#serialization][Serialization]]
+- [[#deserialization][Deserialization]]
+- [[#insecure-deserialization][Insecure Deserialization]]
+- [[#identify-insecure-deserialization][Identify Insecure Deserialization]]
+  - [[#php-serialization-format][PHP serialization format]]
+  - [[#java-serialization-format][Java serialization format]]
+- [[#manipulating-serialized-objects][Manipulating serialized objects]]
+
+* Serialization
+This is the process to convert complex data structure, such as objects and their fileds, into a "flatter" format that can be sent and received as a sequential stream of bytes /accroding to portswigger/
+
+* Deserialization
+This is the process of restoring this byte stream to a fully functional replica of the original object, in the exact state as when it was serialized.
+
+* Insecure Deserialization
+Is when user-controllable data is deserialized by a website.This potentially enables an attacker to manipulate serialized objects in order to pass harmful data into application code. Also known as *object injection* vulnerability.
+
+#+begin_quote
+An object of an unexpected class might cause an exception. By this time, however, the damage may already be done. Many deserialization-based attact are completed before deserialization is finished
+#+end_quote
+
+* Identify Insecure Deserialization
+** PHP serialization format
+PHP uses a mostly human-readable string format
+#+begin_src php
+$user->name = "carlos"  
+$user->isLoggedIn= true
+#+end_src
+When serialized, this object may look something like =O:4:"User":2:{s:4:"name":s:6:"carlos"; s:10:"isLoggedIn":b:1;}=
+#+begin_quote
+native methods for PHP serialization are =serialize()= and =unserialize()=
+#+end_quote
+** Java serialization format
+Java mostly use binary serialization formats. This is more difficult to read, but it can be recognized by few tell-tale signs. Serialized java objects always begin with the same bytes, which are encoded as =ac ed=  in hexadecimal and =roO= in Base64.
+#+begin_quote
+ Any class that implements the interface =java.io.Serializable= can be serialized and deserialized. If you have source code access, take note of any code that uses the =readObject()= method, which is used to read and deserialize data from an =InputStream=.
+#+end_quote
+
+* Manipulating serialized objects
+**** Initial Process
+Study the serialized data to identify and edit interesting attribute values. Then pass the malicious object into the website via it's deserialization process. This is initial step for a basic deserialization exploit
+**** Two approaches
+1. Either edit the object directly in its byte stream form
+2. Script in the corresponding language to create and serialize the new object. This is often easier when working with binary serialization formats.
