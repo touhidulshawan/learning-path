@@ -1,0 +1,154 @@
+#+TITLE: Server Side Parameter Pollution
+#+AUTHOR: [[https://github.com/touhidulshawan][Touhidul Shawan]]
+#+DESCRIPTION: Server side parameter pollution on API 
+#+DATE: 2023-12-18 Mon
+#+OPTIONS: toc:2
+
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS: [letterpaper]
+#+SETUPFILE: ~/.config/emacs/latex/latex-standard-setup.org
+
+* Server-side parameter pollution
+Some systems contain internal APIs that aren't directly accessible from the internet. Server-side parameter pollution occurs when a website embeds user input in a server-side request to an internal API without adequate encoding. This means that an attacker may be able to manipulate or inject parameters, which may enable them to, for example:
++ Override existing parameters
++ Modify the application behavior
++ Access unauthorized data
+* Testing for server-side parameter pollution in the query string
+To test for server-side parameter pollution in the query string, place query syntax characters like #, &, and = in input and observe how the application responds. 
+
+Consider a vulnerable application that enables to search for other users based on their username.
+=GET /userSearch?name=peter&back=/home=
+To retrieve user information, the server queries an internal API with the following request:
+=GET /users/search?name=peter&publicProfile=true=
+** Truncating query strings
+We can use URL-encoded # character to attempt to truncate the server-side request. We can also add a string after the =#= character
+For example, we can modify the query string to the following:
+=GET /userSearch?name=peter%23foo&back=/home=
+The front-end will try to access the following URL:
+=GET /users/search?name=peter#foo&publicProfile=true=
+
+#+begin_quote
+It's essential that we URL-encode the # character. Otherwise the front-end application will interpret it as a fragment identifier and it won't be passed to the internal API. 
+#+end_quote
+
+Review the response for clues about whether the query has been truncated. For example, if the response returns the user peter, the server-side query may have been truncated. If an Invalid name error message is returned, the application may have treated foo as part of the username. This suggests that the server-side request may not have been truncated. 
+
+If we are able to truncate the server-side request, this removes the requirement for the publicProfile field to be set to true. We may be able to exploit this to return non-public user profiles. 
+
+** Injecting invalid parameter
+We can use an URL-encoded & character to attempt to add a second parameter to the server-side request.
+
+For example, we can modify the query string to the following: 
+=GET /userSearch?name=peter%26foo=xyz&back=/home=
+This results in the following server-side request to the internal API:
+=GET /users/search?name=peter&foo=xyz&publicProfile=true=
+
+Review the response for clues about how the additional parameter is parsed. For example, if the response is unchanged this may indicate that the parameter was successfully injected but ignored by the application. 
+
+** Injecting valid parameters
+If we are able to modify the query string, we can then attempt to add a second valid paramter to the server-side request
+
+For example, if we have identified the =email= parameter, we can add it to query string as follows:
+=GET /userSearch?name=peter%26email=foo&back=/home=
+This results in the following server-side request to the internal API:
+=GET /users/search?name=peter&email=foo&publicProfile=true=
+Review the respose for clues about how the additional parameter is parsed
+
+** Overriding existing parameters
+To confirm whether the application is vulnerable to server-side parameter pollution, we could try to override the original parameter. Do this by injecting a second parameter with the same name.
+
+For example, we could modify the query string to the following:
+GET /userSearch?name=peter%26name=carlos&back=/home
+
+This results in the following server-side request to the internal API:
+GET /users/search?name=peter&name=carlos&publicProfile=true
+
+The internal API interprets two name parameters. The impact of this depends on how the application processes the second parameter. This varies across different web technologies. For example:
+
+ + PHP parses the last parameter only. This would result in a user search for carlos.
+ + ASP.NET combines both parameters. This would result in a user search for peter,carlos, which might result in an Invalid username error message.
+ + Node.js / express parses the first parameter only. This would result in a user search for peter, giving an unchanged result.
+
+If we're able to override the original parameter, we may be able to conduct an exploit. For example, we could add name=administrator to the request. This may enable you to log in as the administrator user. 
+
+* Testing for server-side parameter pollution in REST paths
+A RESTful API may place parameter names and values in the URL path, rather than the query string. For example, consider the following path:
+=/api/users/123=
+
+The URL path might be broken down as follows:
+    + =/api= is the root API endpoint.
+    + =/users= represents a resource, in this case users.
+    + =/123 represents a parameter, here an identifier for the specific user.
+
+Consider an application that enables we to edit user profiles based on their username. Requests are sent to the following endpoint:
+=GET /edit_profile.php?name=peter=
+
+This results in the following server-side request:
+=GET /api/private/users/peter=
+
+An attacker may be able to manipulate server-side URL path parameters to exploit the API. To test for this vulnerability, add path traversal sequences to modify parameters and observe how the application responds.
+
+We could submit URL-encoded peter/../admin as the value of the name parameter:
+=GET /edit_profile.php?name=peter%2f..%2fadmin=
+
+This may result in the following server-side request:
+=GET /api/private/users/peter/../admin=
+
+If the server-side client or back-end API normalize this path, it may be resolved to /api/private/users/admin. 
+
+* Testing for server-side parameter pollution in structured data formats
+An attacker may be able to manipulate parameters to exploit vulnerabilities in the server's processing of other structured data formats, such as a JSON or XML. To test for this, inject unexpected structured data into user inputs and see how the server responds.
+
+Consider an application that enables users to edit their profile, then applies their changes with a request to a server-side API. When we edit your name, your browser makes the following request:
+#+begin_src 
+POST /myaccount
+name=peter
+#+end_src
+
+This results in the following server-side request:
+#+begin_src 
+PATCH /users/7312/update
+{"name":"peter"}
+#+end_src
+
+We can attempt to add the access_level parameter to the request as follows:
+#+begin_src 
+POST /myaccount
+name=peter","access_level":"administrator
+#+end_src
+
+If the user input is added to the server-side JSON data without adequate validation or sanitization, this results in the following server-side request:
+#+begin_src 
+PATCH /users/7312/update
+{name="peter","access_level":"administrator"}
+#+end_src
+
+This may result in the user peter being given administrator access. 
+
+Consider a similar example, but where the client-side user input is in JSON data. When we edit your name, your browser makes the following request:
+#+begin_src 
+POST /myaccount
+{"name": "peter"}
+#+end_src
+
+This results in the following server-side request:
+#+begin_src 
+PATCH /users/7312/update
+{"name":"peter"}
+#+end_src
+
+We can attempt to add the access_level parameter to the request as follows:
+#+begin_src 
+POST /myaccount
+{"name": "peter\",\"access_level\":\"administrator"}
+#+end_src
+
+If the user input is decoded, then added to the server-side JSON data without adequate encoding, this results in the following server-side request:
+#+begin_src 
+PATCH /users/7312/update
+{"name":"peter","access_level":"administrator"}
+#+end_src
+
+Again, this may result in the user peter being given administrator access.
+
+Structured format injection can also occur in responses. For example, this can occur if user input is stored securely in a database, then embedded into a JSON response from a back-end API without adequate encoding. We can usually detect and exploit structured format injection in responses in the same way you can in requests. 
